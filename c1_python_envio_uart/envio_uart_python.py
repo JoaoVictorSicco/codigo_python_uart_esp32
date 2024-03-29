@@ -2,7 +2,7 @@ import serial
 import time
 
 # Defina a variável global
-mensagem_serial = 'Bom dia'
+mensagem_serial = 'oi'
 
 ser = serial.Serial('/dev/ttyUSB0', 115200, timeout=1)  # ajuste a porta conforme necessário
 intervalo = 3
@@ -15,5 +15,7 @@ for i in range(intervalo, 0, -1):
 ser.write(mensagem_serial.encode('utf-8'))
 print("ID Cadastrado")
 time.sleep(1)
+response = ser.readline().decode('utf-8').strip()
+print("Received from ESP32:", response)
 
 ser.close()
