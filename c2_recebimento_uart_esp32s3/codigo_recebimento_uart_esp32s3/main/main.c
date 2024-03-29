@@ -12,7 +12,7 @@
 
 #define LEVEL_BUTTON (0)
 
-static const char *SYSTEM_TAG = "SYSTEM";
+// static const char *SYSTEM_TAG = "SYSTEM";
 static const char *TAG = "UART";
 
 #define UART_NUM UART_NUM_0
@@ -30,44 +30,10 @@ void apl_uart_init() {
     };
     uart_param_config(UART_NUM, &uart_config);
     uart_set_pin(UART_NUM, UART_PIN_NO_CHANGE, UART_PIN_NO_CHANGE, UART_PIN_NO_CHANGE, UART_PIN_NO_CHANGE);
+    // uart_set_pin(UART_NUM, 46, 45, UART_PIN_NO_CHANGE, UART_PIN_NO_CHANGE);
     uart_driver_install(UART_NUM, BUF_SIZE * 2, 0, 0, NULL, 0);
 }
 
-// void uart_task(void *pvParameters) {
-//     uint8_t *data = (uint8_t *) malloc(BUF_SIZE);
-//     while (1) {
-//         uart_flush_input(UART_NUM); // Limpeza do buffer de entrada
-//         int len = uart_read_bytes(UART_NUM, data, BUF_SIZE, 20 / portTICK_PERIOD_MS);
-//         if(len > 0) 
-//         {
-//             // Convertendo os bytes para uma string
-//             char str[len + 1];
-//             memcpy(str, data, len);
-//             str[len] = '\0';  // Adicionando o caractere nulo ao final da string
-//             ESP_LOGI(TAG, "Received: %s", str);
-//         }
-//     }
-//     free(data);
-// }
-
-void apl_cadastro_ID()
-{
-    uint8_t *data = (uint8_t *) malloc(BUF_SIZE);
-    while (1) {
-        uart_flush_input(UART_NUM); // Limpeza do buffer de entrada
-        int len = uart_read_bytes(UART_NUM, data, BUF_SIZE, 20 / portTICK_PERIOD_MS);
-        if(len > 0) 
-        {
-            // Convertendo os bytes para uma string
-            char str[len + 1];
-            memcpy(str, data, len);
-            str[len] = '\0';  // Adicionando o caractere nulo ao final da string
-            ESP_LOGI(TAG, "Received: %s", str);
-        }
-        break;
-    }
-    free(data);
-}
 
 void apl_gpio_config()
 {
@@ -82,29 +48,75 @@ void apl_gpio_config()
 
 }
 
-void button_task(void *pvParameter) 
-{
 
-    while(1)
-    {
-        if (gpio_get_level(BUTTON_PIN) == 0) // Verifica se o botão foi pressionado (nível baixo)
-        { 
-            // printf("Modo Fábrica\n");
-            // apl_cadastro_ID(); 
-            while(1)
-            {
-                printf("Modo Fábrica\n");
-                apl_cadastro_ID();
-                vTaskDelay(pdMS_TO_TICKS(500)); 
-            }
-            // vTaskDelay(1000 / portTICK_PERIOD_MS);  // Delay para evitar leituras múltiplas enquanto o botão estiver pressionado
-            vTaskDelay(pdMS_TO_TICKS(1000));  // Em millis
-        }
-        printf("Modo normal\n");
-        vTaskDelay(pdMS_TO_TICKS(1000)); 
-    }
+// ======================== ESSA FUNÇÃO ESTÁ RECEBENDO NORMALMENTE ===============================================================
+// void uart_teste()
+// {
+//     while (1)
+//     {
+//         if(gpio_get_level(BUTTON_PIN) == 0)
+//         {
+//             ESP_LOGI(TAG, "Entrando no modo cadastro");
+//             uint8_t *data = (uint8_t *) malloc(BUF_SIZE);
+//             while (1) 
+//             {
+//                 uart_flush_input(UART_NUM); // Limpeza do buffer de entrada
+//                 int len = uart_read_bytes(UART_NUM, data, BUF_SIZE, 20 / portTICK_PERIOD_MS);
+//                 if(len > 0) 
+//                 {
+//                     // Convertendo os bytes para uma string
+//                     char str[len + 1];
+//                     memcpy(str, data, len);
+//                     str[len] = '\0';  // Adicionando o caractere nulo ao final da string
+//                     ESP_LOGI(TAG, "Received: %s", str);
+//                     // break;
+//                 }
+//             }
+//         free(data);
+//         }
+//         ESP_LOGI(TAG,"Modo normal");
+//         vTaskDelay(pdMS_TO_TICKS(500));
+//     }
+// }
+
+//====================================================================================================================================
+
+void uart_task(void *pvParameters)
+{
     
+    while (1)
+    {
+        ESP_LOGI(TAG, "Entrando no modo cadastro");
+        uint8_t *data = (uint8_t *) malloc(BUF_SIZE);
+        while (1) 
+        {
+            uart_flush_input(UART_NUM); // Limpeza do buffer de entrada
+            int len = uart_read_bytes(UART_NUM, data, BUF_SIZE, 20 / portTICK_PERIOD_MS);
+            // printf("entrou\n");
+            if(len > 0) 
+            {
+                // const char *message = "Hello from ESP32!\n";
+                // Convertendo os bytes para uma string
+                char str[len + 1];
+                memcpy(str, data, len);
+                str[len] = '\0';  // Adicionando o caractere nulo ao final da string
+                ESP_LOGI(TAG, "Received: %s", str);
+                // vTaskDelay(pdMS_TO_TICKS(10));
+                // uart_write_bytes(UART_NUM, message, strlen(message));
+                // vTaskDelay(pdMS_TO_TICKS(10));
+            }
+            // printf("=== DEBUG ===\n");
+            // vTaskDelay(pdMS_TO_TICKS(50));
         
+        }
+        free(data);
+        
+        ESP_LOGI(TAG,"Modo normal");
+        vTaskDelay(pdMS_TO_TICKS(500));
+    }
+
+   
+
 }
 
 void app_main() 
@@ -112,10 +124,9 @@ void app_main()
     apl_uart_init();
     apl_gpio_config();
     
-    // Inicia a tarefa que verifica o botão
-    xTaskCreate(button_task, "button_task", 2048, NULL, 10, NULL);
+    if(gpio_get_level(BUTTON_PIN) == 0)
+    {
+        xTaskCreate(uart_task, "uart_task", 2048, NULL, 10, NULL);
 
-    // ESP_ERROR_CHECK(uart_driver_install(UART_NUM, BUF_SIZE * 2, 0, 0, NULL, 0));
-    
-    // xTaskCreate(uart_task, "uart_task", 2048, NULL, 10, NULL);
+    }
 }
